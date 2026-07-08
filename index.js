@@ -3,6 +3,7 @@ import userRoutes from "./routes/user.routes.js";
 import db from "./db/index.js";
 import { usersTable, userSessions } from "./db/schema.js";
 import { eq } from "drizzle-orm";
+import jwt from "jsonwebtoken"
 
 const app = express();
 const port = process.env.port ?? 8000; // if you gave me port then i will run else i will run 8000.
@@ -10,28 +11,24 @@ const port = process.env.port ?? 8000; // if you gave me port then i will run el
 app.use(express.json())
 //middleware used to know current logged in user
 app.use(async (req, res, next) => {
-    const sessionID = req.headers["session-id"];
-    if (!sessionID) {
-        return next();
-    }
+    try {
+        const tokenHeader = req.headers["authorization"];
+        if (!tokenHeader) {
+            return next();
+        }
+        if (!tokenHeader.startsWith("Bearer")) {
+            return res.status(400).json({ error: "authorization header must start with Bearer" })
+        }
 
-    const [data] = await db
-    .select({
-        sessionID: userSessions.id,
-        userId: userSessions.userID,
-        id: usersTable.id,
-        name: usersTable.name,
-        email: usersTable.email
-    })
-    .from(userSessions)
-    .innerJoin(usersTable, eq(usersTable.id, userSessions.userID))
-    .where(eq(userSessions.id, sessionID));
+        const token = tokenHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_TOKEN);
 
-    if (!data) {
-        return next();
+
+        req.user = decoded;
+        next();
+    } catch {
+        next();
     }
-    req.user = data;
-    next();
 })
 
 app.get('/', (req, res) => {

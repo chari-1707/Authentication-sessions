@@ -4,6 +4,7 @@ import express from "express";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { createHmac } from "crypto";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -70,6 +71,7 @@ router.post('/login', async (req, res) => {
     const [existingUser] = await db
         .select({
             id: usersTable.id,
+            name: usersTable.name,
             email: usersTable.email,
             salt: usersTable.salt,
             password: usersTable.password
@@ -92,12 +94,15 @@ router.post('/login', async (req, res) => {
         return res.status(400).json({ error: "Incorrect password!" })
     }
 
-    //generate a session for user
-    const [session] = await db.insert(userSessions).values({
-        userID: existingUser.id,
-    }).returning({ id: userSessions.id });
+    const payload = {
+        id: existingUser.id,
+        email: existingUser.email,
+        name: existingUser.name
+    }
 
-    return res.cookie().json({ status: "success", sessionID: session.id })
+    const token = jwt.sign(payload, process.env.JWT_TOKEN)
+
+    return res.cookie().json({ status: "success", token })
 });
 
 
