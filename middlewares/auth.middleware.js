@@ -26,3 +26,13 @@ export const ensureAuthenticated = async (req, res, next) => {
     }
     next();
 }
+
+export const restrictToRole = (role) => {
+    return (req, res, next) => {
+        if (req.user.role !== role) {
+            return res.status(401).json({
+                error: "You are not authorized to access this resource"
+            })
+        }
+    }
+} // this is a closure function so yeah

@@ -9,7 +9,7 @@ import { ensureAuthenticated } from "../middlewares/auth.middleware.js"
 
 const router = express.Router();
 
-router.patch("/", ensureAuthenticated ,async (req, res) => {
+router.patch("/", ensureAuthenticated, async (req, res) => {
     const { name } = req.body;
     await db.update(usersTable).set({ name }).where(eq(usersTable.id, user.id));
 
@@ -65,6 +65,7 @@ router.post('/login', async (req, res) => {
             name: usersTable.name,
             email: usersTable.email,
             salt: usersTable.salt,
+            role: usersTable.role,
             password: usersTable.password
         })
         .from(usersTable)
@@ -88,7 +89,8 @@ router.post('/login', async (req, res) => {
     const payload = {
         id: existingUser.id,
         email: existingUser.email,
-        name: existingUser.name
+        name: existingUser.name,
+        role: existingUser.role
     }
 
     const token = jwt.sign(payload, process.env.JWT_TOKEN)
